@@ -1,3 +1,0 @@
-file /home/rex/COSSDK/SDK_11_1/build/bin/app_process_gaia
-set solib-search-path /home/rex/workspace/ListWidgetGroup/out/release/unstripped
-set follow-fork-mode child
