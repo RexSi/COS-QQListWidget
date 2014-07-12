@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:gaia="http://schemas.gaia.com/pkg/res/gaia"
+    package="ListWidgetGroup"
+    gaia:isGaiaPackage="true"
+    gaia:isCosPackage="true"
+    gaia:cosApiVersion="11"
+    gaia:cosApiSubVersion="1"
+    gaia:versionCode="1"
+    gaia:versionName="1.0">
+    <skip-erased />
+        <application gaia:icon="@drawable/icon" gaia:label="@string/app_name" >
+        <page gaia:name=".MainPage" gaia:label="@string/app_name">
+            <demand-filter>
+                <action gaia:name="android.intent.action.MAIN" />
+                <category gaia:name="android.intent.category.LAUNCHER" />
+            </demand-filter>
+        </page>
+    </application>
+    <uses-sdk gaia:minSdkVersion="7" />
+</manifest>
