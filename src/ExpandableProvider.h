@@ -9,8 +9,6 @@ public:
     ExpandableProvider(gaia::core::Page* pPage);
     virtual ~ExpandableProvider();
 
-    virtual void onGroupExpanded(int32_t groupPosition);
-    virtual void onGroupCollapsed(int32_t groupPosition);
     virtual int32_t getGroupCount();
     virtual int32_t getChildrenCount(int32_t groupPosition);
     virtual bool hasStableIds();

@@ -37,7 +37,7 @@ private:
     int32_t mTheGroupExpandPosition;
     int32_t mCountExpand;
     gaia::ui::ListItemLite* mpTop;
-    gaia::ui::MarginControllerParams* mpMarginParams;
+    gaia::ui::RelativeControllerParams* mpRelativeControllerParams;
     gaia::base::HashMap<int32_t, int32_t> mGroupIds;
     gaia::base::Vector<gaia::core::Widget*> mWidgetPool;
 };

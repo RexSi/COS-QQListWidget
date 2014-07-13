@@ -13,7 +13,7 @@
 #include <gaia/core/Persistence.h>
 #include <gaia/core/vision/Scene.h>
 #include <gaia/ui/ExpandableListWidget.h>
-#include <gaia/ui/MarginControllerParams.h>
+#include <gaia/ui/RelativeControllerParams.h>
 #include <gaia/ui/RelativeController.h>
 #include <gaia/ui/ListItemLite.h>
 #include <gaia/ui/TextWidget.h>
@@ -26,42 +26,6 @@ using namespace gaia::base;
 using namespace gaia::core;
 using namespace gaia::ui;
 
-class MyOnGroupItemClickListener: public ExpandableListWidget::OnGroupItemClickListener {
-public:
-    explicit MyOnGroupItemClickListener(TextWidget *pText)
-            : mpText(pText) {
-    }
-
-    virtual bool onGroupClick(ExpandableListWidget *parent, Widget *pWidget, int32_t groupPosition, int64_t id) {
-        GLOG(LOG_TAG, LOGINFO, "group item: %d(addr: %p, ID:%lld) is clicked", groupPosition, pWidget, id);
-        if (mpText) {
-            mpText->setText(String::format("group item: %d", groupPosition));
-        }
-        return true;
-    }
-
-private:
-    TextWidget *mpText;
-};
-
-class MyOnChildItemClickListener: public ExpandableListWidget::OnChildItemClickListener {
-public:
-    explicit MyOnChildItemClickListener(TextWidget *pText)
-            : mpText(pText) {
-    }
-
-    virtual bool onChildClick(ExpandableListWidget *parent, Widget *pWidget, int32_t groupPosition, int32_t childPosition, int64_t id) {
-        GLOG(LOG_TAG, LOGINFO, "Child item: %d(group: %d, addr: %p" ", ID:%lld) is clicked", childPosition, groupPosition, pWidget, id);
-        if (mpText) {
-            mpText->setText(String::format("Child item: %d is clicked", childPosition));
-        }
-        return true;
-    }
-
-private:
-    TextWidget *mpText;
-};
-
 MainPage::MainPage()
         : mpListWidget(NULL),
           mpProvider(NULL),
@@ -69,7 +33,7 @@ MainPage::MainPage()
           mTheGroupExpandPosition(-1),
           mCountExpand(0),
           mpTop(NULL),
-          mpMarginParams(NULL) {
+          mpRelativeControllerParams(NULL) {
     GLOGENTRY(LOG_TAG);
 }
 
@@ -84,11 +48,12 @@ void MainPage::onInit(Persistence* const p) {
     RelativeController* pRc = new RelativeController(this);
     mWidgetPool.append(pRc);
 
-    mpMarginParams = new MarginControllerParams(ControllerParams::MATCH_PARENT, ControllerParams::WRAP_CONTENT);
+    mpRelativeControllerParams = new RelativeControllerParams(ControllerParams::MATCH_PARENT, ControllerParams::WRAP_CONTENT);
+    mpRelativeControllerParams->setRelation(RelativeControllerParams::ALIGN_PARENT_TOP);
 
     mpTop = new ListItemLite(this, ListItemLite::CENTERTITLETEXTPANEL, ListItemLite::END);
     mWidgetPool.append(mpTop);
-    mpTop->setControllerParams(mpMarginParams);
+    mpTop->setControllerParams(mpRelativeControllerParams);
 
     mpListWidget = new ExpandableListWidget(this);
     mpListWidget->setIndicatorBounds(0, 0);
@@ -121,7 +86,7 @@ void MainPage::onTear() {
     mWidgetPool.clear();
     delete mpListWidget;
     delete mpProvider;
-    delete mpMarginParams;
+    delete mpRelativeControllerParams;
     getSceneSingleton()->SceneDestroy();
 }
 
@@ -137,65 +102,58 @@ void MainPage::onScrollStateChanged(AbsListWidget *pWidget, int32_t scrollState)
 }
 
 void MainPage::onScroll(AbsListWidget* pWidget, int32_t firstVisibleItem, int32_t visibleItemCount, int32_t totalItemCount) {
-    GLOGENTRY(LOG_TAG);
-    //防止三星,魅族等手机第一个条目可以一直往下拉,父条目和悬浮同时出现的问题
     if (firstVisibleItem == 0) {
         mpTop->setVisibility(Widget::GONE);
     }
-    // 控制滑动时TextView的显示与隐藏
-    int32_t npos = pWidget->pointToPosition(0, 0);
-    GLOG(LOG_TAG, LOGINFO, "npos: %d", npos);
-    if (npos != AbsListWidget::INVALID_POSITION) {
-        int64_t pos = mpListWidget->getExpandableListPosition(npos);
-        int32_t childPos = ExpandableListWidget::getPackedPositionChild(pos);
-        const int32_t groupPos = ExpandableListWidget::getPackedPositionGroup(pos);
-        GLOG(LOG_TAG, LOGINFO, "pos: %lld, childPos %d, groupPos %d", pos, childPos, groupPos);
-        if (childPos == AbsListWidget::INVALID_POSITION) {
-            Widget* groupView = mpListWidget->getChildWidget(npos - mpListWidget->getFirstVisiblePosition());
-            mIndicatorGroupHeight = groupView->getHeight();
-            GLOG(LOG_TAG, LOGINFO, "mIndicatorGroupHeight: %d", mIndicatorGroupHeight);
-        }
 
-        if (mIndicatorGroupHeight == 0) {
-            return;
-        }
-        // if (isExpanded) {
-        if (mCountExpand > 0) {
-            mTheGroupExpandPosition = groupPos;
-
-            GLOG(LOG_TAG, LOGINFO, "mCountExpand: %d", mCountExpand);
-            CenterTitleTextPanel::Handler* pHandler = dynamic_cast<CenterTitleTextPanel::Handler*>(mpTop->getHandler(0));
-            pHandler->setText(String::format("  Group %d", mTheGroupExpandPosition));
-
-            if (mTheGroupExpandPosition != groupPos || !mpListWidget->isGroupExpanded(groupPos)) {
-                mpTop->setVisibility(Widget::GONE);
-                GLOG(LOG_TAG, LOGINFO, "mTheGroupExpandPosition: %d", mTheGroupExpandPosition);
-
-            } else {
-                mpTop->setVisibility(Widget::VISIBLE);
-                GLOG(LOG_TAG, LOGINFO, "mTheGroupExpandPosition: %d", mTheGroupExpandPosition);
-            }
-        }
-        if (mCountExpand == 0) {
-            mpTop->setVisibility(Widget::GONE);
-        }
+    if (mCountExpand <= 0) {
+        mpTop->setVisibility(Widget::GONE);
+        return;
     }
+    int32_t npos = pWidget->pointToPosition(0, 0);
+    if (npos == AbsListWidget::INVALID_POSITION) {
+        return;
+    }
+    const int64_t pos = mpListWidget->getExpandableListPosition(npos);
+    const int32_t childPos = ExpandableListWidget::getPackedPositionChild(pos);
+    const int32_t groupPos = ExpandableListWidget::getPackedPositionGroup(pos);
+    if (!mpListWidget->isGroupExpanded(groupPos)) {
+        mpTop->setVisibility(Widget::GONE);
+        return;
+    }
+    mTheGroupExpandPosition = groupPos;
 
     if (mTheGroupExpandPosition == -1) {
         return;
     }
-    /**
-     * calculate point (0,indicatorGroupHeight)
-     */
+
+    if (childPos == AbsListWidget::INVALID_POSITION) {
+        Widget* groupWidget = mpListWidget->getChildWidget(npos - mpListWidget->getFirstVisiblePosition());
+        mIndicatorGroupHeight = groupWidget->getHeight();
+        GLOG(LOG_TAG, LOGINFO, "mIndicatorGroupHeight: %d", mIndicatorGroupHeight);
+    }
+
+    if (mIndicatorGroupHeight == 0) {
+        return;
+    }
+
+    mpTop->setVisibility(Widget::VISIBLE);
+    CenterTitleTextPanel::Handler* pHandler = dynamic_cast<CenterTitleTextPanel::Handler*>(mpTop->getHandler(0));
+    pHandler->setText(String::format("  Group %d", mTheGroupExpandPosition));
+
     int32_t showHeight = getHeight();
-    // 得到悬浮的条滑出屏幕多少
-    mpMarginParams->setMargin(MarginControllerParams::TOP, -(mIndicatorGroupHeight - showHeight));
+    if (showHeight == 0) {
+        mpTop->setVisibility(Widget::GONE);
+        return;
+    }
+    mpRelativeControllerParams->setMargin(MarginControllerParams::TOP, -(mIndicatorGroupHeight - showHeight));
 }
 
 int32_t MainPage::getHeight() {
     GLOGENTRY(LOG_TAG);
     int32_t showHeight = mIndicatorGroupHeight;
     int32_t nEndPos = mpListWidget->pointToPosition(0, mIndicatorGroupHeight);
+
     if (nEndPos != AbsListWidget::INVALID_POSITION) {
         int64_t pos = mpListWidget->getExpandableListPosition(nEndPos);
         int32_t groupPos = ExpandableListWidget::getPackedPositionGroup(pos);
@@ -208,13 +166,11 @@ int32_t MainPage::getHeight() {
 }
 
 void MainPage::onGroupCollapse(int32_t groupPosition) {
-    GLOGENTRY(LOG_TAG);
     mGroupIds.remove(groupPosition);
     mCountExpand = mGroupIds.size();
 }
 
 void MainPage::onGroupExpand(int32_t groupPosition) {
-    GLOGENTRY(LOG_TAG);
     mTheGroupExpandPosition = groupPosition;
     mGroupIds.add(groupPosition, 0);
     mCountExpand = mGroupIds.size();
