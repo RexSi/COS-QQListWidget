@@ -89,5 +89,5 @@ Widget* ExpandableProvider::createChildItemWidget(int32_t groupPosition, int32_t
 Widget* ExpandableProvider::getChildItemWidget(int32_t groupPosition, int32_t childPosition, bool isLastChild, Widget* convertWidget, Widget* parent) {
     TextWidget* pItem = dynamic_cast<TextWidget*> (convertWidget);
     pItem->setText(String::format("Child %d", childPosition));
-    return pItem;
+    return convertWidget;
 }

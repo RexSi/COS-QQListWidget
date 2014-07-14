@@ -63,7 +63,7 @@ void MainPage::onInit(Persistence* const p) {
     mpListWidget->setOnScrollListener(this);
 
     mpProvider = new ExpandableProvider(this);
-    mpProvider->setAutoClearWidgetEnabled(true);
+    mpProvider->setAutoClearWidgetEnabled(false);
 
     mpListWidget->setProvider(mpProvider);
     CenterTitleTextPanel::Handler* pHandler = dynamic_cast<CenterTitleTextPanel::Handler*>(mpTop->getHandler(0));
